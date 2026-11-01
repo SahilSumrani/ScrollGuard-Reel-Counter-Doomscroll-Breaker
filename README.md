@@ -2,12 +2,12 @@
 
 ScrollGuard is an Android app that helps you notice short-form video scrolling and set daily focus boundaries. It is built with Kotlin, Jetpack Compose, Android Accessibility Services, overlay windows, and Room.
 
-> The project is currently an early Android app. Scroll detection depends on accessibility events exposed by each supported app and can vary across app versions and devices.
+> Current verified support: Instagram Reels. Other apps are not listed as working because their scroll detection has not been verified.
 
 ## Features
 
 - Daily dashboard with total and per-app reel counts, hourly activity, and focus status.
-- Scroll monitoring for Instagram, YouTube, Facebook, Snapchat, and TikTok.
+- Scroll monitoring for Instagram Reels.
 - Optional floating counter while a tracked app is open.
 - Configurable daily and per-app limits, with a focus boundary screen when a limit is reached.
 - A mindful pause screen, social arena UI, and home-screen widget.
@@ -54,25 +54,21 @@ Counting and floating overlays will not work until their Android permissions are
 1. Open ScrollGuard and choose **Reel Detection Service**. In Android Accessibility settings, enable the ScrollGuard service and accept the system confirmation.
 2. Return to the app and enable **Display over other apps** for ScrollGuard to show the floating counter and focus screen.
 3. On OPPO/ColorOS and some other Android builds, allow background activity or auto-launch for ScrollGuard and set its battery use to **Unrestricted** (wording varies by OS version).
-4. Open a supported app and scroll its short-form feed. The dashboard and overlay update when the service receives a supported scroll event.
+4. Open Instagram Reels and scroll. The dashboard and overlay update when the service receives a supported scroll event.
 
-Accessibility access is used to identify the foreground package and receive scroll events. The service configuration restricts events to the supported package names listed below. No analytics or network backend is configured in this project; usage statistics are stored locally in the app database.
+Accessibility access is used to identify Instagram and receive scroll events. No analytics or network backend is configured in this project; usage statistics are stored locally in the app database.
 
 ## Supported apps
 
-| App | Android package |
-| --- | --- |
-| Instagram | `com.instagram.android` |
-| YouTube | `com.google.android.youtube` |
-| Facebook | `com.facebook.katana` |
-| Snapchat | `com.snapchat.android` |
-| TikTok | `com.zhiliaoapp.musically` |
+| App | Android package | Status |
+| --- | --- | --- |
+| Instagram Reels | `com.instagram.android` | Working |
 
-Detection is based on accessibility scroll events; an app update or device-specific UI may change whether those events are available. The counter is not a guaranteed measurement of every individual video viewed.
+Detection is based on accessibility scroll events; Instagram updates or device-specific UI changes may affect detection. The counter is not a guaranteed measurement of every individual video viewed.
 
 ## Troubleshooting
 
-- **Count stays at zero:** confirm the Accessibility service is enabled in Android settings, then test by scrolling inside a supported app. Some app screens do not expose scroll events in a format the current detector recognizes.
+- **Instagram Reels count stays at zero:** confirm the Accessibility service is enabled in Android settings, then test by scrolling inside Reels. Instagram updates or device-specific UI may change which scroll events are exposed.
 - **Floating pill or boundary screen does not appear:** grant Display over other apps permission.
 - **Stops after leaving the app or locking the screen:** allow background activity/auto-start and remove ScrollGuard from battery optimization if your device provides those controls.
 - **Build fails during sync:** confirm JDK 17 and Android SDK Platform 34 are installed, then sync again.
