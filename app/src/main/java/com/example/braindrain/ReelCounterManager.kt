@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.ArrayDeque
 import java.util.*
 
 /**
@@ -82,9 +83,121 @@ object ReelCounterManager {
         val appLabel = PACKAGE_LABELS[packageName] ?: return
         val now = System.currentTimeMillis()
 
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
-            handleScrollEvent(context, event, packageName, appLabel, now)
+        when (packageName) {
+            "com.instagram.android" -> {
+                if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+                    handleInstagramScrollEvent(context, event, packageName, appLabel, now)
+                }
+            }
+            "com.google.android.youtube", "com.facebook.katana" -> {
+                if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+                    handleShortVideoScroll(context, event, rootNode, packageName, appLabel, now)
+                }
+            }
+            else -> if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
+                handleScrollEvent(context, event, packageName, appLabel, now)
+            }
         }
+    }
+
+    /**
+     * YouTube Shorts and Facebook Reels use custom pager views that often report
+     * neither RecyclerView classes nor useful adapter indexes. Count their real
+     * accessibility scroll events only while short-video controls are on screen.
+     */
+    private fun handleShortVideoScroll(
+        context: Context,
+        event: AccessibilityEvent,
+        rootNode: AccessibilityNodeInfo?,
+        packageName: String,
+        appLabel: String,
+        now: Long
+    ) {
+        val visibleText = collectVisibleText(rootNode).lowercase(Locale.ROOT)
+            .replace(Regex("\\s+"), " ").trim()
+        val isShortVideoScreen = when (packageName) {
+            "com.google.android.youtube" ->
+                visibleText.contains("remix this short") ||
+                    visibleText.contains("#shorts") ||
+                    visibleText.contains("see more videos using this sound") ||
+                    visibleText.contains("share this reel with")
+            "com.facebook.katana" ->
+                visibleText.contains("reels") &&
+                    (visibleText.contains("comment") || visibleText.contains("like"))
+            else -> false
+        }
+        if (!isShortVideoScreen) {
+            Log.d("ReelCounter", "Scroll ignored outside short-video screen: $packageName")
+            return
+        }
+
+        val lastTime = lastCountTime[packageName] ?: 0L
+        if (now - lastTime < PRIMARY_DEBOUNCE_MS) return
+
+        val index = when {
+            event.toIndex >= 0 -> event.toIndex
+            event.fromIndex >= 0 -> event.fromIndex
+            else -> -1
+        }
+        if (index >= 0) highWaterIndex[packageName] = index
+        lastCountTime[packageName] = now
+        Log.d("ReelCounter", "Short-video scroll event ${event.eventType} detected for $appLabel — COUNTED")
+        incrementCount(context, appLabel)
+    }
+
+    private fun collectVisibleText(root: AccessibilityNodeInfo?): String {
+        if (root == null) return ""
+        val result = StringBuilder()
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        var visited = 0
+        while (queue.isNotEmpty() && visited < 250) {
+            val node = queue.removeFirst()
+            visited++
+            node.text?.let { result.append(it).append(' ') }
+            node.contentDescription?.let { result.append(it).append(' ') }
+            for (index in 0 until minOf(node.childCount, 40)) {
+                val child = node.getChild(index) ?: continue
+                queue.addLast(child)
+            }
+            if (node !== root) {
+                @Suppress("DEPRECATION")
+                node.recycle()
+            }
+        }
+        while (queue.isNotEmpty()) {
+            @Suppress("DEPRECATION")
+            queue.removeFirst().recycle()
+        }
+        return result.toString()
+    }
+
+    /** Instagram's Reels pager can report a changing accessibility class name and no index. */
+    private fun handleInstagramScrollEvent(
+        context: Context,
+        event: AccessibilityEvent,
+        packageName: String,
+        appLabel: String,
+        now: Long
+    ) {
+        val lastTime = lastCountTime[packageName] ?: 0L
+        if (now - lastTime < PRIMARY_DEBOUNCE_MS) return
+
+        val currentIndex = when {
+            event.fromIndex >= 0 -> event.fromIndex
+            event.toIndex >= 0 -> event.toIndex
+            else -> -1
+        }
+        val previousHighWater = highWaterIndex[packageName] ?: -1
+        if (currentIndex >= 0 && currentIndex == previousHighWater) {
+            Log.d("ReelCounter", "Instagram reel index unchanged: $currentIndex — SKIPPED")
+            return
+        }
+
+        if (currentIndex >= 0) highWaterIndex[packageName] = currentIndex
+        lastCountTime[packageName] = now
+        Log.d("ReelCounter", "Instagram Reels scroll detected — COUNTED")
+        incrementCount(context, appLabel)
     }
 
     /**

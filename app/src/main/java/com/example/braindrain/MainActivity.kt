@@ -9,6 +9,9 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -67,6 +70,19 @@ class MainActivity : ComponentActivity() {
                 RootAppNavigation()
             }
         }
+    }
+}
+
+@Composable
+private fun OnResumeEffect(onResume: () -> Unit) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentOnResume by rememberUpdatedState(onResume)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) currentOnResume()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 }
 
@@ -139,10 +155,15 @@ fun RootAppNavigation() {
 fun OnboardingScreen(onComplete: () -> Unit) {
     val context = LocalContext.current
     val isAccessibilityGranted = remember { mutableStateOf(false) }
-    val isOverlayGranted = remember {
-        mutableStateOf(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(context) else true
-        )
+    val isOverlayGranted = remember { mutableStateOf(false) }
+
+    OnResumeEffect {
+        isOverlayGranted.value = Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context)
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ).orEmpty()
+        isAccessibilityGranted.value = enabledServices.contains(BrainDrainAccessibilityService::class.java.name)
     }
 
     var isVisible by remember { mutableStateOf(false) }
@@ -468,6 +489,7 @@ fun InsightsDashboardTab() {
     var hourlyBuckets by remember { mutableStateOf<List<HourlyBucket>>(emptyList()) }
 
     LaunchedEffect(Unit) {
+        while (true) {
         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val db = AppDatabase.getDatabase(context)
         withContext(Dispatchers.IO) {
@@ -481,6 +503,8 @@ fun InsightsDashboardTab() {
                 tiktokReels = stats.tiktokReels
             }
             hourlyBuckets = db.statsDao().getHourlyBuckets(dateStr)
+        }
+            kotlinx.coroutines.delay(1500)
         }
     }
 

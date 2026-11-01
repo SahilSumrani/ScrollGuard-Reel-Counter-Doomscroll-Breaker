@@ -13,6 +13,14 @@ class BrainDrainAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
 
+        try {
+            handleAccessibilityEvent(event)
+        } catch (exception: Exception) {
+            Log.e("MindControl", "Failed to process accessibility event ${event.eventType}", exception)
+        }
+    }
+
+    private fun handleAccessibilityEvent(event: AccessibilityEvent) {
         val packageName = event.packageName?.toString() ?: return
 
         when (event.eventType) {
@@ -50,10 +58,12 @@ class BrainDrainAccessibilityService : AccessibilityService() {
                 if (!ReelCounterManager.TRACKED_PACKAGES.contains(packageName)) return
 
                 val rootNode = rootInActiveWindow
-                ReelCounterManager.analyzeAccessibilityEvent(this, event, rootNode)
-
-                @Suppress("DEPRECATION")
-                rootNode?.recycle()
+                try {
+                    ReelCounterManager.analyzeAccessibilityEvent(this, event, rootNode)
+                } finally {
+                    @Suppress("DEPRECATION")
+                    rootNode?.recycle()
+                }
             }
         }
     }
