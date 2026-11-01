@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash Screen Theme -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set the splash screen background -->
+        <item name="windowSplashScreenBackground">#090A10</item>
+        <!-- Set the splash screen logo -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_mind_logo</item>
+        <!-- Set the post-splash theme (the actual app theme) -->
+        <item name="postSplashScreenTheme">@style/Theme.AppCompat.Light.NoActionBar</item>
+    </style>
+</resources>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg_premium"
+    android:padding="16dp">
+
+    <!-- Brain Emoji Container -->
+    <LinearLayout
+        android:id="@+id/widget_icon_container"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/widget_icon_bg"
+        android:gravity="center"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true">
+        
+        <TextView
+            android:id="@+id/widget_emoji"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🧠"
+            android:textSize="32sp" />
+    </LinearLayout>
+
+    <!-- Text content -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_toEndOf="@id/widget_icon_container"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="16dp">
+        
+        <TextView
+            android:id="@+id/widget_state_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NEURAL PEAK"
+            android:textColor="#10B981"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textAllCaps="true"
+            android:letterSpacing="0.1"/>
+
+        <TextView
+            android:id="@+id/widget_count_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0 Reels Today"
+            android:textColor="#F9FAFB"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="4dp"/>
+    </LinearLayout>
+</RelativeLayout>

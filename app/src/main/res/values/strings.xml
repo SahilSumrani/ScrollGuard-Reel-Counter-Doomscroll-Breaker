@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Mind Control</string>
+    <string name="accessibility_service_description">Monitors your scrolling patterns to help you maintain focus and build healthier screen habits.</string>
+</resources>
